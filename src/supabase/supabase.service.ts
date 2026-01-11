@@ -100,4 +100,39 @@ export class SupabaseService {
       .replace(/-{2,}/g, '-')
       .replace(/^-+|-+$/g, '');
   }
+
+  async listFiles(folder: string) {
+    const client = this.getSupabaseClient(); // Xavfsiz clientni olamiz
+
+    const { data, error } = await client.storage
+      .from(this.bucketName)
+      .list(folder, { // folder bo'yicha qidirish
+        limit: 100,
+        offset: 0,
+        sortBy: { column: 'created_at', order: 'desc' },
+      });
+
+    if (error) throw new BadRequestException(`Fayllarni olishda xatolik: ${error.message}`);
+
+    const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
+
+    return data.map((file) => ({
+      name: file.name,
+      id: file.id,
+      createdAt: file.created_at,
+      url: `${supabaseUrl}/storage/v1/object/public/${this.bucketName}/${folder}/${file.name}`,
+    }));
+  }
+
+  // Faylni o'chirish uchun asosiy metod (Controller uchun)
+  async deleteFileByPath(filePath: string): Promise<void> {
+    const client = this.getSupabaseClient();
+    const { error } = await client.storage
+      .from(this.bucketName)
+      .remove([filePath]);
+
+    if (error) {
+      throw new BadRequestException(`O'chirishda xatolik: ${error.message}`);
+    }
+  }
 }

@@ -5,6 +5,9 @@ import {
   UseInterceptors,
   BadRequestException,
   UseGuards,
+  Get,
+  Delete,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -13,6 +16,7 @@ import {
   ApiConsumes,
   ApiBody,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -84,4 +88,23 @@ export class UploadController {
     const url = await this.supabaseService.uploadFile(file, 'documents');
     return { url };
   }
+
+  @Get('images')
+  @Roles('SUPER_ADMIN', 'ADMIN') // Faqat adminlar ko'ra oladi
+  @ApiOperation({ summary: 'Yuklangan barcha rasmlar roʻyxatini olish' })
+  async getImages() {
+    return this.supabaseService.listFiles('images');
+  }
+
+  // 2. DELETE: Faylni o'chirish
+  @Delete('remove')
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Faylni oʻchirish (Path orqali)' })
+  @ApiQuery({ name: 'path', description: 'Masalan: images/171234567-foto.png' })
+  async removeFile(@Query('path') path: string) {
+    if (!path) throw new BadRequestException('Fayl yoʻli (path) koʻrsatilishi shart');
+    await this.supabaseService.deleteFileByPath(path);
+    return { message: 'Fayl muvaffaqiyatli oʻchirildi' };
+  }
+
 }
