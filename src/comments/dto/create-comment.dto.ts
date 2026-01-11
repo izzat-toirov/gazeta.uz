@@ -4,7 +4,7 @@ import { IsInt, IsString, Length } from 'class-validator';
 export class CreateCommentDto {
   @ApiProperty({
     description: 'Comment text',
-    example: 'This is a great article!',
+    example: 'Bu maqola juda foydali!',
   })
   @IsString()
   @Length(1, 1000)

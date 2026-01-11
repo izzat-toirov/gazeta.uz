@@ -11,6 +11,7 @@ import { LoginDto } from './dto/login.dto';
 import { hashPassword } from '../utils/bcrypt.util';
 import { Role } from '@prisma/client';
 import { ForbiddenException as CustomForbiddenException } from '../common/exceptions/forbidden.exception';
+import { UpdateProfileDto } from './dto/UpdateProfileDto.dto';
 
 @Injectable()
 export class AuthService {
@@ -128,5 +129,42 @@ export class AuthService {
     });
 
     return superAdminCount <= 1;
+  }
+
+  async updateProfile(userId: number, updateDto: UpdateProfileDto) {
+    // 1. Foydalanuvchi mavjudligini tekshiramiz
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+  
+    if (!user) {
+      throw new UnauthorizedException('Foydalanuvchi topilmadi');
+    }
+  
+    // 2. Agar email o'zgartirilayotgan bo'lsa, u band emasligini tekshiramiz
+    if (updateDto.email && updateDto.email !== user.email) {
+      const emailExists = await this.prisma.user.findUnique({
+        where: { email: updateDto.email },
+      });
+      if (emailExists) {
+        throw new ConflictException('Bu email allaqachon band');
+      }
+    }
+  
+    // 3. Ma'lumotlarni yangilaymiz (role bu yerga tushmaydi)
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: updateDto,
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        avatar: true,
+        role: true,
+        updatedAt: true,
+      },
+    });
+  
+    return updatedUser;
   }
 }

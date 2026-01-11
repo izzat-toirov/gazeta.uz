@@ -5,6 +5,7 @@ import {
   HttpStatus,
   UseGuards,
   Get,
+  Patch,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,6 +22,7 @@ import { LoginDto } from './dto/login.dto';
 import { Public } from './decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
+import { UpdateProfileDto } from './dto/UpdateProfileDto.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -74,5 +76,20 @@ export class AuthController {
   })
   async getProfile(@GetUser('id') userId: number) {
     return this.authService.getProfile(userId);
+  }
+
+  @Patch('profile')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update own profile' })
+  @UseGuards(JwtAuthGuard) // Faqat tizimga kirganlar uchun
+  async updateProfile(
+    @GetUser() user: any,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
+    // @GetUser orqali kelgan user.sub yoki user.id ni ishlatamiz
+    return this.authService.updateProfile(
+      user.id || user.sub,
+      updateProfileDto,
+    );
   }
 }
