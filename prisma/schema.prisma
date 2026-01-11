@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Foydalanuvchilar (Adminlar, Jurnalistlar va Oddiy o'quvchilar)
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  password String
+  fullName String
+  avatar   String? // Profil rasmi
+  role     Role    @default(USER) // Standart holatda hamma oddiy user
+
+  // Bog'liqliklar
+  articles Article[] @relation("AuthorArticles") // Faqat REPORTER/EDITOR uchun
+  comments Comment[] // Foydalanuvchi qoldirgan izohlar
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN // Tizim egasi
+  EDITOR // Maqolalarni tasdiqlovchi va gazeta yuklovchi
+  REPORTER // Maqola yozuvchi jurnalist
+  USER // Saytga kirib izoh qoldiruvchi oddiy o'quvchilar
+}
+
+// 2. Kategoriyalar (Siyosat, Iqtisodiyot va h.k.)
+model Category {
+  id       Int       @id @default(autoincrement())
+  nameUz   String
+  nameRu   String?
+  slug     String    @unique // URL uchun (masalan: /category/sport)
+  articles Article[]
+}
+
+// 3. Maqolalar (Yangiliklar)
+model Article {
+  id          Int     @id @default(autoincrement())
+  titleUz     String
+  titleRu     String?
+  contentUz   String  @db.Text
+  contentRu   String? @db.Text
+  slug        String  @unique
+  thumbnail   String? // Asosiy rasm
+  viewCount   Int     @default(0)
+  isPublished Boolean @default(false) // Editor tasdiqlamasa saytga chiqmaydi
+
+  // Bog'liqliklar
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  authorId Int
+  author   User @relation("AuthorArticles", fields: [authorId], references: [id])
+
+  newspaperId Int? // Agar maqola aniq bir gazeta sonidan olingan bo'lsa
+  newspaper   Newspaper? @relation(fields: [newspaperId], references: [id])
+
+  comments Comment[] // Maqolaga yozilgan izohlar
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 4. Izohlar (Comments)
+model Comment {
+  id   Int    @id @default(autoincrement())
+  text String @db.Text
+
+  // Kim yozdi?
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Qaysi maqolaga yozildi?
+  articleId Int
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+// 5. Gazeta Arvixi (PDF formatidagi gazetalar)
+model Newspaper {
+  id         Int      @id @default(autoincrement())
+  title      String // Masalan: "15-son"
+  issueDate  DateTime // Gazeta chop etilgan sana
+  pdfUrl     String // Fayl serveridagi PDF manzili
+  coverImage String? // Gazeta birinchi beti rasmi
+
+  articles Article[] // Shu sonning ichidagi elektron maqolalar
+
+  createdAt DateTime @default(now())
+}
+
+// 6. Reklama va E'lonlar (Ixtiyoriy, lekin portal uchun kerak)
+model Advertisement {
+  id         Int       @id @default(autoincrement())
+  title      String
+  imageUrl   String
+  link       String? // Tashqi saytga havola
+  isActive   Boolean   @default(true)
+  expiryDate DateTime? // Reklama tugash sanasi
+}
