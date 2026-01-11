@@ -89,11 +89,28 @@ export class UploadController {
     return { url };
   }
 
+  // Rasmlar uchun
   @Get('images')
-  @Roles('SUPER_ADMIN', 'ADMIN') // Faqat adminlar ko'ra oladi
-  @ApiOperation({ summary: 'Yuklangan barcha rasmlar roʻyxatini olish' })
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Barcha rasmlar roʻyxati' })
   async getImages() {
     return this.supabaseService.listFiles('images');
+  }
+
+  // PDFlar uchun
+  @Get('pdfs')
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Barcha PDF fayllar roʻyxati' })
+  async getPdfs() {
+    return this.supabaseService.listFiles('pdfs');
+  }
+
+  // Hujjatlar uchun
+  @Get('documents')
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Barcha Word/Excel hujjatlar roʻyxati' })
+  async getDocuments() {
+    return this.supabaseService.listFiles('documents');
   }
 
   // 2. DELETE: Faylni o'chirish
